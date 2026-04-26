@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Audio Assistant</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+    color: #1e293b; 
+    min-height: 100vh; 
+  }
+
+  header {
+    background: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid #cbd5e1;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  header h1 { 
+    font-size: 20px; 
+    color: #4f46e5; 
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  header span { 
+    font-size: 14px; 
+    color: #64748b;
+    font-weight: 500;
+  }
+  .header-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    height: calc(100vh - 63px);
+  }
+
+  /* Left panel */
+  .left {
+    background: rgba(255, 255, 255, 0.7);
+    border-right: 1px solid #cbd5e1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    backdrop-filter: blur(10px);
+  }
+
+  .section {
+    padding: 24px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+
+  .tab-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1;
+    padding: 9px;
+    border: 1px solid #cbd5e1;
+    background: rgba(255, 255, 255, 0.8);
+    color: #64748b;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .tab:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #94a3b8;
+  }
+  .tab.active {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border-color: #7c3aed;
+    color: white;
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+  }
+
+  .input-panel { display: none; }
+  .input-panel.active { display: block; }
+
+  input[type="text"], textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    color: #1e293b;
+    padding: 12px 14px;
+    font-size: 14px;
+    resize: none;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type="text"]:focus, textarea:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  .upload-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255, 255, 255, 0.5);
+  }
+  .upload-zone:hover { 
+    border-color: #8b5cf6; 
+    background: rgba(255, 255, 255, 0.8);
+  }
+  .upload-zone p { font-size: 13px; color: #64748b; margin-top: 8px; }
+  .upload-zone strong { font-size: 14px; color: #475569; }
+
+  .btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.2s;
+  }
+  .btn:hover { 
+    transform: translateY(-1px);
+  }
+  .btn-purple { 
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); 
+    color: white; 
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+  }
+  .btn-purple:hover {
+    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+  }
+  .btn-green { 
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+    color: white; 
+    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+  }
+  .btn-green:hover {
+    box-shadow: 0 4px 8px rgba(5, 150, 105, 0.3);
+  }
+  .btn-gray { 
+    background: rgba(255, 255, 255, 0.8); 
+    color: #475569; 
+    border: 1px solid #cbd5e1;
+  }
+  .btn-gray:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #94a3b8;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin-top: 12px;
+    width: 100%;
+    justify-content: center;
+    font-weight: 500;
+  }
+  .badge-empty { 
+    background: rgba(255, 255, 255, 0.6); 
+    color: #64748b; 
+    border: 1px solid #cbd5e1; 
+  }
+  .badge-ready { 
+    background: rgba(16, 185, 129, 0.1); 
+    color: #059669; 
+    border: 1px solid rgba(16, 185, 129, 0.2); 
+  }
+  .badge-loading { 
+    background: rgba(255, 255, 255, 0.6); 
+    color: #64748b; 
+    border: 1px solid #cbd5e1; 
+  }
+
+  /* Right panel */
+  .right {
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+  }
+
+  .chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .msg {
+    max-width: 80%;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .msg-user {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .msg-ai {
+    background: rgba(255, 255, 255, 0.9);
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+  .msg-source {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    gap: 12px;
+  }
+  .empty-state p { font-size: 15px; }
+  .empty-state-icon {
+    width: 48px;
+    height: 48px;
+    color: #cbd5e1;
+  }
+
+  /* Ask bar */
+  .ask-bar {
+    padding: 18px 28px;
+    background: rgba(255, 255, 255, 0.9);
+    border-top: 1px solid #cbd5e1;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    backdrop-filter: blur(10px);
+  }
+  .ask-bar textarea {
+    flex: 1;
+    max-height: 120px;
+    min-height: 48px;
+    padding: 14px 16px;
+    font-size: 14px;
+    resize: none;
+  }
+  .icon-btn {
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .icon-btn:hover { 
+    transform: translateY(-1px);
+  }
+  .btn-ask-send { 
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+  }
+  .btn-ask-send:hover {
+    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+  }
+  .btn-ask-speak { 
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+  }
+  .btn-ask-speak:hover {
+    box-shadow: 0 4px 8px rgba(5, 150, 105, 0.3);
+  }
+  .btn-ask-mic { 
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 2px 4px rgba(217, 119, 6, 0.2);
+  }
+  .btn-ask-mic:hover {
+    box-shadow: 0 4px 8px rgba(217, 119, 6, 0.3);
+  }
+  .btn-ask-stop { 
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+    display: none;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+  }
+  .btn-ask-stop:hover {
+    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  }
+
+  .speaking-indicator {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #059669;
+    padding: 0 28px 12px;
+    font-weight: 500;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .dot { 
+    width: 8px; 
+    height: 8px; 
+    background: #10b981; 
+    border-radius: 50%; 
+    animation: pulse 1s infinite; 
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>
+    <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+    </svg>
+    Context Audio Assistant
+  </h1>
+  <span id="header-status">No content loaded</span>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: Input sources -->
+  <div class="left">
+    <div class="section">
+      <div class="section-title">Load content</div>
+
+      <div class="tab-row">
+        <div class="tab active" onclick="switchTab('pdf')">PDF</div>
+        <div class="tab" onclick="switchTab('url')">URL</div>
+        <div class="tab" onclick="switchTab('text')">Text</div>
+      </div>
+
+      <!-- PDF -->
+      <div class="input-panel active" id="panel-pdf">
+        <div class="upload-zone" onclick="document.getElementById('pdf-input').click()" id="drop-zone">
+          <strong>Click to upload PDF</strong>
+          <p>or drag and drop</p>
+        </div>
+        <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="handlePDF(this)">
+        <button class="btn btn-purple" onclick="uploadPDF()" id="btn-upload" disabled>Upload & Ingest</button>
+      </div>
+
+      <!-- URL -->
+      <div class="input-panel" id="panel-url">
+        <input type="text" id="url-input" placeholder="https://example.com/article..." style="margin-bottom:0">
+        <button class="btn btn-purple" onclick="ingestURL()">Fetch & Ingest</button>
+      </div>
+
+      <!-- Text -->
+      <div class="input-panel" id="panel-text">
+        <textarea id="text-input" rows="7" placeholder="Paste any text, blog post, essay, or article here..."></textarea>
+        <button class="btn btn-purple" onclick="ingestText()">Ingest Text</button>
+      </div>
+
+      <div class="status-badge badge-empty" id="status-badge">
+        <span id="status-dot">○</span>
+        <span id="status-text">No content loaded</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Try asking</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-gray" onclick="quickAsk('Summarise this content in 3 sentences')">Summarise this</button>
+        <button class="btn btn-gray" onclick="quickAsk('What are the key points?')">Key points</button>
+        <button class="btn btn-gray" onclick="quickAsk('Explain this simply as if I am a beginner')">Explain simply</button>
+        <button class="btn btn-gray" onclick="quickAsk('What is the main argument or conclusion?')">Main conclusion</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Chat -->
+  <div class="right">
+    <div class="chat-history" id="chat-history">
+      <div class="empty-state" id="empty-state">
+        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+          <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+        </svg>
+        <p>Load a PDF, URL, or paste text to get started</p>
+        <p style="font-size:13px">Then ask any question and hear the answer read aloud</p>
+      </div>
+    </div>
+
+    <div class="speaking-indicator" id="speaking-indicator">
+      <div class="dot"></div>
+      Speaking answer aloud...
+    </div>
+
+    <div class="ask-bar">
+      <textarea id="question-input" placeholder="Ask anything about the loaded content..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askQuestion(false)}"></textarea>
+      <button class="icon-btn btn-ask-send" onclick="askQuestion(false)" title="Ask">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </button>
+      <button class="icon-btn btn-ask-speak" onclick="askQuestion(true)" title="Ask and speak">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+      </button>
+      <button class="icon-btn btn-ask-mic" onclick="startVoice()" title="Voice input">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+      </button>
+      <button class="icon-btn btn-ask-stop" onclick="stopSpeaking()" title="Stop speaking" id="btn-stop">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <rect x="6" y="4" width="4" height="16"></rect>
+          <rect x="14" y="4" width="4" height="16"></rect>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let selectedFile = null;
+let isSpeaking = false;
+
+// Tab switching
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.input-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+// PDF handling
+function handlePDF(input) {
+  selectedFile = input.files[0];
+  if (selectedFile) {
+    document.getElementById('drop-zone').innerHTML =
+      `<strong>${selectedFile.name}</strong><p>${(selectedFile.size/1024).toFixed(0)} KB</p>`;
+    document.getElementById('btn-upload').disabled = false;
+  }
+}
+
+async function uploadPDF() {
+  if (!selectedFile) return;
+  setStatus('loading', 'Ingesting PDF...');
+  const form = new FormData();
+  form.append('file', selectedFile);
+  try {
+    const res = await fetch(`${API}/ingest/pdf`, { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.error) { setStatus('empty', 'Error: ' + data.error); return; }
+    setStatus('ready', `Ready — ${data.chunks} chunks from ${data.source}`);
+    addSystemMsg(`PDF ingested: ${data.source} (${data.chunks} chunks)`);
+  } catch(e) { setStatus('empty', 'Error — is backend running?'); }
+}
+
+async function ingestURL() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { alert('Please enter a URL'); return; }
+  setStatus('loading', 'Fetching URL...');
+  try {
+    const res = await fetch(`${API}/ingest/url`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (data.error) { setStatus('empty', 'Error: ' + data.error); return; }
+    setStatus('ready', `Ready — ${data.chunks} chunks loaded`);
+    addSystemMsg(`URL ingested: ${url} (${data.chunks} chunks)`);
+  } catch(e) { setStatus('empty', 'Error — is backend running?'); }
+}
+
+async function ingestText() {
+  const text = document.getElementById('text-input').value.trim();
+  if (!text) { alert('Please paste some text'); return; }
+  setStatus('loading', 'Ingesting text...');
+  const form = new FormData();
+  form.append('text', text);
+  try {
+    const res = await fetch(`${API}/ingest/text`, { method: 'POST', body: form });
+    const data = await res.json();
+    setStatus('ready', `Ready — ${data.chunks} chunks ingested`);
+    addSystemMsg(`Text ingested (${data.chunks} chunks)`);
+  } catch(e) { setStatus('empty', 'Error — is backend running?'); }
+}
+
+// Asking questions
+async function askQuestion(speakAloud) {
+  const q = document.getElementById('question-input').value.trim();
+  if (!q) return;
+  document.getElementById('question-input').value = '';
+  document.getElementById('empty-state').style.display = 'none';
+  addMsg(q, 'user');
+
+  const thinking = addMsg('Thinking...', 'ai');
+  try {
+    const res = await fetch(`${API}/ask`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ question: q })
+    });
+    const data = await res.json();
+    thinking.querySelector('.msg-text').textContent = data.answer;
+    if (data.source) {
+      const src = document.createElement('div');
+      src.className = 'msg-source';
+      src.textContent = 'Source: ' + data.source;
+      thinking.appendChild(src);
+    }
+    if (speakAloud) speak(data.answer);
+  } catch(e) {
+    thinking.querySelector('.msg-text').textContent = 'Error: Make sure the backend is running!';
+  }
+}
+
+function quickAsk(q) {
+  document.getElementById('question-input').value = q;
+  askQuestion(true);
+}
+
+// Chat messages
+function addMsg(text, role) {
+  const div = document.createElement('div');
+  div.className = `msg msg-${role}`;
+  const t = document.createElement('span');
+  t.className = 'msg-text';
+  t.textContent = text;
+  div.appendChild(t);
+  document.getElementById('chat-history').appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth' });
+  return div;
+}
+
+function addSystemMsg(text) {
+  const div = document.createElement('div');
+  div.style.cssText = 'text-align:center;font-size:12px;color:#059669;padding:4px 0;font-weight:500';
+  div.textContent = text;
+  document.getElementById('chat-history').appendChild(div);
+  document.getElementById('empty-state').style.display = 'none';
+}
+
+// TTS
+function speak(text) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.95; u.lang = 'en-US';
+  const voices = window.speechSynthesis.getVoices();
+  const v = voices.find(v => v.name.includes('Google') || v.name.includes('Natural'));
+  if (v) u.voice = v;
+  u.onstart = () => {
+    document.getElementById('speaking-indicator').style.display = 'flex';
+    document.getElementById('btn-stop').style.display = 'flex';
+  };
+  u.onend = () => {
+    document.getElementById('speaking-indicator').style.display = 'none';
+    document.getElementById('btn-stop').style.display = 'none';
+  };
+  window.speechSynthesis.speak(u);
+}
+
+function stopSpeaking() {
+  window.speechSynthesis.cancel();
+  document.getElementById('speaking-indicator').style.display = 'none';
+  document.getElementById('btn-stop').style.display = 'none';
+}
+
+// Voice input
+function startVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Use Chrome for voice input'); return; }
+  const r = new SR();
+  r.lang = 'en-US';
+  r.onresult = e => {
+    document.getElementById('question-input').value = e.results[0][0].transcript;
+  };
+  r.start();
+}
+
+// Status badge
+function setStatus(type, text) {
+  const badge = document.getElementById('status-badge');
+  const dot = document.getElementById('status-dot');
+  const label = document.getElementById('status-text');
+  const header = document.getElementById('header-status');
+  badge.className = 'status-badge';
+  if (type === 'ready') {
+    badge.classList.add('badge-ready');
+    dot.textContent = '●';
+  } else if (type === 'loading') {
+    badge.classList.add('badge-loading');
+    dot.textContent = '◌';
+  } else {
+    badge.classList.add('badge-empty');
+    dot.textContent = '○';
+  }
+  label.textContent = text;
+  header.textContent = text;
+}
+
+// Drag and drop for PDF
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = '#7c3aed'; });
+dz.addEventListener('dragleave', () => { dz.style.borderColor = '#2a2a2a'; });
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.style.borderColor = '#2a2a2a';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') {
+    selectedFile = file;
+    dz.innerHTML = `<strong>${file.name}</strong><p>${(file.size/1024).toFixed(0)} KB</p>`;
+    document.getElementById('btn-upload').disabled = false;
+  }
+});
+</script>
+</body>
+</html>
