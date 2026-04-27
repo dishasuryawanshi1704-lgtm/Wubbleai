@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 380px;
+      min-height: 500px;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+      color: #1e293b;
+      padding: 20px;
+    }
+    h2 { 
+      font-size: 18px; 
+      color: #4f46e5; 
+      margin-bottom: 16px; 
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .icon {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+    }
+    .label { 
+      font-size: 12px; 
+      color: #64748b; 
+      margin-bottom: 6px; 
+      font-weight: 500;
+    }
+    .focus-box {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #475569;
+      max-height: 60px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    textarea {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px;
+      resize: none;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+    .btn-row { 
+      display: flex; 
+      gap: 10px; 
+      margin-bottom: 16px; 
+    }
+    button {
+      flex: 1;
+      padding: 12px 8px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-ask { 
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); 
+      color: white; 
+      box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+    }
+    .btn-ask:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+    }
+    .btn-speak { 
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+      color: white; 
+      box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+    }
+    .btn-speak:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(5, 150, 105, 0.3);
+    }
+    .btn-mic { 
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+      color: white; 
+      flex: 0 0 48px;
+      box-shadow: 0 2px 4px rgba(217, 119, 6, 0.2);
+    }
+    .btn-mic:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(217, 119, 6, 0.3);
+    }
+    .answer {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 80px;
+      color: #334155;
+      margin-top: 8px;
+      white-space: pre-wrap;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .status { 
+      font-size: 12px; 
+      color: #64748b; 
+      margin-top: 12px; 
+      text-align: center;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <h2>
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+    </svg>
+    Context Audio Assistant
+  </h2>
+
+  <div class="label">Currently focused on:</div>
+  <div class="focus-box" id="focus-preview">Hover over any text on the page…</div>
+
+  <div class="label">Your question:</div>
+  <textarea id="question" rows="3"
+    placeholder="Summarise this · Explain simply · What does this mean?"></textarea>
+
+  <div class="btn-row">
+    <button class="btn-ask" id="btn-ask">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      Ask
+    </button>
+    <button class="btn-speak" id="btn-speak">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+      Ask + Speak
+    </button>
+    <button class="btn-mic" id="btn-mic">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>
+    </button>
+  </div>
+
+  <div class="answer" id="answer">Answer will appear here…</div>
+  <div class="status" id="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
